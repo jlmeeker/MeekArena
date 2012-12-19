@@ -1,4 +1,4 @@
-TreeToppler
+MeekArena
 ==========
 
-Slight chance for a tree to be instantly and completely chopped down.
+Generate a PVP arena and allow users to choose to enter.
