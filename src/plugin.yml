@@ -5,13 +5,6 @@ author: Jared Meeker
 description: Generate a PVP arena
 
 commands:
-   begin:
-      description: Start the arena
-      usage: /<command> [player]
-      permission: <plugin name>.basic
-      permission-message: You don't have <permission>
-   end:
-      description: End the arena
-      usage: /<command> [player]
-      permission: <plugin name>.basic
-      permission-message: You don't have <permission>
+   arena:
+      description: MeekArena Commands
+      usage: /<command> [start | stop | status | join | leave]

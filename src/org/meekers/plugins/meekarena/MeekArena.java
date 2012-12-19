@@ -26,95 +26,151 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class MeekArena extends JavaPlugin {
 
-    Map<String, ItemStack[]> inventories = new HashMap<String, ItemStack[]>();
-    Map<String, ItemStack[]> armors = new HashMap<String, ItemStack[]>();
-    Map<String, Location> locations = new HashMap<String, Location>();
+    Map<String, ItemStack[]> inventories = new HashMap<>();
+    Map<String, ItemStack[]> armors = new HashMap<>();
+    Map<String, Location> locations = new HashMap<>();
+    public WorldCreator newworld = new WorldCreator("arena");
+    public Location newspawn;
+    public Player[] plist;
+    PlayerInventory newinventory;
+    public boolean started = false;
+
+    // Spawn listener for player deaths (intercept)
+    public void onEnable() {
+        Bukkit.getPluginManager().registerEvents(new MeekArenaPluginListener(this), this);
+    }
+
+    public void onDisable() {
+        // cycle through arena players and restore them
+        for (Player ap : Bukkit.getWorld("arena").getPlayers()) {
+            // Restore to original state
+            this.restoreState(ap);
+
+            // give full life and food
+            this.fullHeal(ap);
+        }
+    }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+        Player splayer = Bukkit.getPlayer(sender.getName());
 
-        if (cmd.getName().equalsIgnoreCase("begin")) { // If the player typed /begin then do the following...
-            Bukkit.broadcastMessage("Starting arena....");
-            // Generate new world and capture new spawn location
-            WorldCreator newworld = new WorldCreator("arena");
-            newworld.environment(World.Environment.NORMAL);
-            newworld.generateStructures(false);
-            newworld.type(WorldType.NORMAL);
-            newworld.createWorld();
-            Location newspawn = Bukkit.getWorld("arena").getSpawnLocation();
-
-            // Get list of online players
-            Player[] plist = Bukkit.getOnlinePlayers();
-
-
-            for (Player op : plist) {
-                // save inventory
-                this.inventories.put(op.getName(), op.getInventory().getContents());
-                this.armors.put(op.getName(), op.getEquipment().getArmorContents());
-                op.sendMessage("Inventory has been saved.");
-
-                // Save location
-                this.locations.put(op.getName(), op.getLocation());
-                op.sendMessage("Location has been saved.");
-
-                // Send player to arena
-                Bukkit.broadcastMessage("sending " + op.getPlayerListName() + " to the arena");
-                op.getInventory().clear();
-                op.sendMessage("Inventory has been cleared");
-                op.teleport(newspawn);
-
-                // give full life and food
-                op.setHealth(op.getMaxHealth());
-                op.setFoodLevel(20);
-                op.setExhaustion(0);
-                
-                // assign default inventory items
-                PlayerInventory newinventory  = op.getInventory();
-                newinventory.addItem(new ItemStack(Material.IRON_SWORD, 1));
-                newinventory.addItem(new ItemStack(Material.IRON_AXE, 1));
-                newinventory.addItem(new ItemStack(Material.IRON_SPADE, 1));
-                newinventory.addItem(new ItemStack(Material.IRON_PICKAXE, 1));
-                newinventory.addItem(new ItemStack(Material.BED, 1));
-                newinventory.addItem(new ItemStack(Material.COOKED_BEEF, 5));
-                
-                op.getEquipment().setBoots(new ItemStack(Material.CHAINMAIL_BOOTS, 1));
-                op.getEquipment().setChestplate(new ItemStack(Material.CHAINMAIL_CHESTPLATE, 1));
-                op.getEquipment().setHelmet(new ItemStack(Material.CHAINMAIL_HELMET, 1));
-                op.getEquipment().setLeggings(new ItemStack(Material.CHAINMAIL_LEGGINGS, 1));
-                op.sendMessage("Inventory has been built");
+        if (cmd.getName().equalsIgnoreCase("arena")) {
+            if (args.length > 1) {
+                sender.sendMessage("Too many arguments!");
+                return false;
             }
-            return true;
-        } //If this has happened the function will return true. 
-        else if (cmd.getName().equalsIgnoreCase("end")) {
-            List<Player> aplayers = Bukkit.getWorld("arena").getPlayers();
-
-            for (Player ap : aplayers) {
-                // Clear all player inventories
-                ap.getInventory().clear();
-                ap.sendMessage("Inventory cleared");
-
-                // move all players back to "world"
-                ap.teleport(this.locations.get(ap.getName()));
-                ap.sendMessage("Restored to previous location");
-
-                // reinstate all original inventory
-                ap.getInventory().setContents(this.inventories.get(ap.getName()));
-                ap.getEquipment().setArmorContents(this.armors.get(ap.getName()));
-                ap.sendMessage("Inventory restored");
-
-                // give full life and food
-                ap.setHealth(ap.getMaxHealth());
-                ap.setFoodLevel(20);
-                ap.setExhaustion(0);
-
+            if (args.length < 1) {
+                sender.sendMessage("Not enough arguments!");
+                return false;
             }
+            if ("start".equals(args[0]) && this.started != true) {
+                Bukkit.broadcastMessage("Starting arena....");
+                // Generate new world and capture new spawn location
+                this.newworld.environment(World.Environment.NORMAL);
+                this.newworld.generateStructures(false);
+                this.newworld.type(WorldType.NORMAL);
+                this.newworld.createWorld();
+                this.newspawn = Bukkit.getWorld("arena").getSpawnLocation();
+                this.started = true;
+                Bukkit.broadcastMessage("The area is live!!! To enter, type /arena join");
+                return true;
+            } else if ("start".equals(args[0]) && this.started == true) {
+                sender.sendMessage("The arena is already running. Use: /arena join to get into the action!");
+                return true;
+            } else if ("stop".equalsIgnoreCase(args[0]) && this.started == true) {
+                List<Player> aplayers = Bukkit.getWorld("arena").getPlayers();
 
-            // Destroy arena
-            boolean result = Bukkit.unloadWorld("arena", false);
-            Bukkit.broadcastMessage("Arena ended!" + result);
-            return true;
-        } //If this has happened the function will return true. 
+                for (Player ap : aplayers) {
+                    // Restore to original state
+                    this.restoreState(ap);
 
-        // If this hasn't happened the a value of false will be returned.
+                    // give full life and food
+                    this.fullHeal(ap);
+                }
+
+                // Destroy arena
+                boolean result = Bukkit.unloadWorld("arena", false);
+                Bukkit.broadcastMessage("Arena ended!");
+                this.started = false;
+                return true;
+            } else if ("status".equalsIgnoreCase(args[0])) {
+                if (this.started == true) {
+                    sender.sendMessage("The arena is live!");
+                } else {
+                    sender.sendMessage("The arena is not available.");
+                }
+                return true;
+            } else if ("join".equalsIgnoreCase(args[0]) && this.started == true) {
+                this.saveSate(splayer);
+                this.setInventory(splayer);
+                splayer.teleport(newspawn);
+                this.fullHeal(splayer);
+                return true;
+            } else if ("join".equalsIgnoreCase(args[0]) && this.started == false) {
+                sender.sendMessage("The arena is not available");
+                return true;
+            } else if ("leave".equalsIgnoreCase(args[0]) && this.started == true) {
+                this.restoreState(splayer);
+                this.fullHeal(splayer);
+                return true;
+            } else {
+                sender.sendMessage("/arena [start | stop | status | join | leave]");
+                return false;
+            }
+        }
         return false;
+    }
+
+    public void saveSate(Player inplayer) {
+        // save inventory
+        this.inventories.put(inplayer.getName(), inplayer.getInventory().getContents());
+        this.armors.put(inplayer.getName(), inplayer.getEquipment().getArmorContents());
+        inplayer.sendMessage("Inventory has been saved.");
+
+        // Save location
+        this.locations.put(inplayer.getName(), inplayer.getLocation());
+        inplayer.sendMessage("Location has been saved.");
+    }
+
+    public void restoreState(Player inplayer) {
+        // Clear all player inventories
+        inplayer.getInventory().clear();
+        inplayer.sendMessage("Inventory cleared");
+
+        // move all players back to "world"
+        inplayer.teleport(this.locations.get(inplayer.getName()));
+        inplayer.sendMessage("Restored to previous location");
+
+        // reinstate all original inventory
+        inplayer.getInventory().setContents(this.inventories.get(inplayer.getName()));
+        inplayer.getEquipment().setArmorContents(this.armors.get(inplayer.getName()));
+        inplayer.sendMessage("Inventory restored");
+    }
+
+    public void setInventory(Player inplayer) {
+        inplayer.getInventory().clear();
+        inplayer.sendMessage("Inventory has been cleared");
+
+        // Setup default inventory
+        PlayerInventory inventory = inplayer.getInventory();
+        inventory.addItem(new ItemStack(Material.IRON_SWORD, 1));
+        inventory.addItem(new ItemStack(Material.IRON_AXE, 1));
+        inventory.addItem(new ItemStack(Material.IRON_SPADE, 1));
+        inventory.addItem(new ItemStack(Material.IRON_PICKAXE, 1));
+        inventory.addItem(new ItemStack(Material.BED, 1));
+        inventory.addItem(new ItemStack(Material.COOKED_BEEF, 5));
+
+        inplayer.getEquipment().setBoots(new ItemStack(Material.CHAINMAIL_BOOTS, 1));
+        inplayer.getEquipment().setChestplate(new ItemStack(Material.CHAINMAIL_CHESTPLATE, 1));
+        inplayer.getEquipment().setHelmet(new ItemStack(Material.CHAINMAIL_HELMET, 1));
+        inplayer.getEquipment().setLeggings(new ItemStack(Material.CHAINMAIL_LEGGINGS, 1));
+        inplayer.sendMessage("Inventory has been built");
+    }
+
+    public void fullHeal(Player inplayer) {
+        // give full life and food
+        inplayer.setHealth(inplayer.getMaxHealth());
+        inplayer.setFoodLevel(20);
+        inplayer.setExhaustion(0);
     }
 }
