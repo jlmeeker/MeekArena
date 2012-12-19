@@ -1,4 +1,4 @@
-MeekArena
-=========
+TreeToppler
+==========
 
-(Minecraft Bukkit) Generate a PVP arena.
+Slight chance for a tree to be instantly and completely chopped down.
