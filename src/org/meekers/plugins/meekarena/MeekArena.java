@@ -4,6 +4,7 @@
  */
 package org.meekers.plugins.meekarena;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -32,6 +34,7 @@ public class MeekArena extends JavaPlugin {
     public Player[] plist;
     public boolean starting = false;
     public boolean started = false;
+    public int arenawidth = 128;
 
     // Spawn listener for player deaths (intercept)
     public void onEnable() {
@@ -56,7 +59,7 @@ public class MeekArena extends JavaPlugin {
         if (cmd.getName().equalsIgnoreCase("arena")) {
             if (args.length > 1 || args.length < 1) {
                 return false;
-            } else if ("start".equals(args[0]) && this.started != true) {
+            } else if ("start".equalsIgnoreCase(args[0])) {
                 if (this.starting == true) {
                     sender.sendMessage("The arena is already starting... wait for the join message.");
                     return true;
@@ -78,6 +81,7 @@ public class MeekArena extends JavaPlugin {
                     wcreator.generateStructures(false);
                     wcreator.type(WorldType.NORMAL);
                     arena = wcreator.createWorld();
+                    this.generateBorder(arena.getSpawnLocation(), this.arenawidth, Material.GLASS);
                 }
 
                 if (arena != null) {
@@ -109,10 +113,22 @@ public class MeekArena extends JavaPlugin {
                 // Destroy arena
                 boolean result = Bukkit.unloadWorld("arena", false);
                 Bukkit.broadcastMessage("Arena ended!");
-                this.started = false;
-                this.starting = false;
+
+                if (result = true) {
+                    this.started = false;
+                    this.starting = false;
+
+                    File arenaDir = new File("arena");
+                    boolean delres = this.deleteDirectory(arenaDir);
+                    if (delres = true) {
+                        getLogger().info("Deleted arena folder.");
+                    } else {
+                        getLogger().info("Failed to delete arena folder.");
+                    }
+                }
+
                 return true;
-            } else if ("join".equals(args[0])) {
+            } else if ("join".equalsIgnoreCase(args[0])) {
                 if (this.starting == true) {
                     sender.sendMessage("Please wait for the arena to fully start.");
                     return true;
@@ -136,7 +152,7 @@ public class MeekArena extends JavaPlugin {
                     getLogger().info("You must be a player to join the arena.");
                 }
                 return true;
-            } else if ("leave".equals(args[0])) {
+            } else if ("leave".equalsIgnoreCase(args[0])) {
                 if (this.testPlayer(sender)) {
                     // If player is already in the arena, tell them so
                     if (!"arena".equals(splayer.getLocation().getWorld().getName()) || this.started != true) {
@@ -151,7 +167,7 @@ public class MeekArena extends JavaPlugin {
                     getLogger().info("You must be a player to leave the arena.");
                 }
                 return true;
-            } else if ("status".equals(args[0])) {
+            } else if ("status".equalsIgnoreCase(args[0])) {
                 String status = "";
                 String players = "";
                 if (this.started == true) {
@@ -236,5 +252,74 @@ public class MeekArena extends JavaPlugin {
         } else {
             return false;
         }
+    }
+
+    public void generateBorder(Location loc, int length, Material blocktype) {  // public visible method generateCube() with 2 parameters point and location
+//        Bukkit.broadcastMessage("building cube");
+        World world = loc.getWorld();
+
+        int x_start = loc.getBlockX() + length;     // Set the startpoints to the coordinates of the given location
+        int y_start = 1;
+        int z_start = loc.getBlockZ() + length;
+        /* Note: used getBlockX() instead of getX() because it returns an int value and avoid the cast with (int)loc.getX() */
+
+        int x_length = x_start + (length * 2);    // now i set the lengths for each dimension... should be clear.
+        int y_length = 256;
+        int z_length = z_start + (length * 2);
+
+        int z = z_start;
+        int x = x_start;
+        for (int y = y_start; y <= y_length; y++) {
+
+            for (int i = 0; i <= (length * 2); i++) {
+                Block blockToChange = world.getBlockAt(x, y, z);
+                blockToChange.setType(blocktype);
+                x--;
+            }
+
+            for (int i = 0; i <= (length * 2); i++) {
+                Block blockToChange = world.getBlockAt(x, y, z);
+                blockToChange.setType(blocktype);
+                z--;
+            }
+
+            for (int i = 0; i <= (length * 2); i++) {
+                Block blockToChange = world.getBlockAt(x, y, z);
+                blockToChange.setType(blocktype);
+                x++;
+            }
+
+            for (int i = 0; i <= (length * 2); i++) {
+                Block blockToChange = world.getBlockAt(x, y, z);
+                blockToChange.setType(blocktype);
+                z++;
+            }
+
+            if (y == 255) {
+                Bukkit.broadcastMessage("Building ceiling");
+                for (x = x_start; x >= (x_start - (length * 2)); x--) {
+                    for (z = z_start; z >= (z_start - (length * 2)); z--) {
+                        Block blockToChange = world.getBlockAt(x, y, z);
+                        blockToChange.setType(blocktype);
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean deleteDirectory(File path) {
+        if (path.exists()) {
+            for (File f : path.listFiles()) {
+                if (f.isDirectory()) {
+                    deleteDirectory(f);
+                    f.delete();
+                } else {
+                    f.delete();
+                }
+            }
+            path.delete();
+            return true;
+        }
+        return false;
     }
 }

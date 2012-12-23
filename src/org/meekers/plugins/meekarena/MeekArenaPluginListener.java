@@ -2,13 +2,13 @@ package org.meekers.plugins.meekarena;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.EntityType;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -79,6 +79,22 @@ class MeekArenaPluginListener implements Listener {
         if ("arena".equals(pworld)) {
             this.plugin.restoreState(player);
             this.plugin.fullHeal(player);
+        }
+    }
+    
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onBorderBreak(BlockBreakEvent event) {
+        Block evblock = event.getBlock();
+        double blockX = evblock.getLocation().getX();
+        double blockY = evblock.getLocation().getY();
+        double blockZ = evblock.getLocation().getZ();
+        Location arenaspawn = Bukkit.getWorld("arena").getSpawnLocation();
+        double arenaX = arenaspawn.getX();
+        double arenaY = arenaspawn.getY();
+        double arenaZ = arenaspawn.getZ();
+        
+        if (blockX >= (arenaX+this.plugin.arenawidth) || blockX <= (arenaX-this.plugin.arenawidth) || blockZ >= (arenaZ+this.plugin.arenawidth) || blockZ <= (arenaZ-this.plugin.arenawidth) || blockY >= 255) {
+            event.setCancelled(true);
         }
     }
 }
