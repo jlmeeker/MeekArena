@@ -1,6 +1,6 @@
 main: org.meekers.plugins.meekarena.MeekArena
 name: MeekArena
-version: 1.0
+version: 1.1
 author: Jared Meeker
 description: Generate a PVP arena
 

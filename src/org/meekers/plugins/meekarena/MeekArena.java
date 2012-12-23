@@ -34,10 +34,10 @@ public class MeekArena extends JavaPlugin {
     public Player[] plist;
     public boolean starting = false;
     public boolean started = false;
-    public int arenawidth = 128;
 
     // Spawn listener for player deaths (intercept)
     public void onEnable() {
+        this.saveDefaultConfig();
         Bukkit.getPluginManager().registerEvents(new MeekArenaPluginListener(this), this);
     }
 
@@ -51,6 +51,11 @@ public class MeekArena extends JavaPlugin {
                 this.fullHeal(ap);
             }
         }
+        Bukkit.unloadWorld("arena", false);
+        File arenaDir = new File("arena");
+        this.deleteDirectory(arenaDir);
+        this.starting = false;
+        this.started = false;
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -81,7 +86,16 @@ public class MeekArena extends JavaPlugin {
                     wcreator.generateStructures(false);
                     wcreator.type(WorldType.NORMAL);
                     arena = wcreator.createWorld();
-                    this.generateBorder(arena.getSpawnLocation(), this.arenawidth, Material.GLASS);
+                    arena.setAutoSave(false);
+                    int radius = this.getConfig().getInt("borderradius");
+                    String blocktype = this.getConfig().getString("bordermaterial").toUpperCase();
+                    Bukkit.broadcastMessage(blocktype);
+                    Material bmat_material = Material.getMaterial(blocktype);
+
+                    if (bmat_material == null) {
+                        bmat_material = Material.GLASS;
+                    }
+                    this.generateBorder(arena.getSpawnLocation(), radius, bmat_material);
                 }
 
                 if (arena != null) {
@@ -300,7 +314,7 @@ public class MeekArena extends JavaPlugin {
                 for (x = x_start; x >= (x_start - (length * 2)); x--) {
                     for (z = z_start; z >= (z_start - (length * 2)); z--) {
                         Block blockToChange = world.getBlockAt(x, y, z);
-                        blockToChange.setType(blocktype);
+                        blockToChange.setType(Material.GLASS);
                     }
                 }
             }

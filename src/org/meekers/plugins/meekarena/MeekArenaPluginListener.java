@@ -93,7 +93,8 @@ class MeekArenaPluginListener implements Listener {
         double arenaY = arenaspawn.getY();
         double arenaZ = arenaspawn.getZ();
         
-        if (blockX >= (arenaX+this.plugin.arenawidth) || blockX <= (arenaX-this.plugin.arenawidth) || blockZ >= (arenaZ+this.plugin.arenawidth) || blockZ <= (arenaZ-this.plugin.arenawidth) || blockY >= 255) {
+        int radius = this.plugin.getConfig().getInt("borderradius");
+        if (blockX >= (arenaX+radius) || blockX <= (arenaX-radius) || blockZ >= (arenaZ+radius) || blockZ <= (arenaZ-radius) || blockY >= 255) {
             event.setCancelled(true);
         }
     }
