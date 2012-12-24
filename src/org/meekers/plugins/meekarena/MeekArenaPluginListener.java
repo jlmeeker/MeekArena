@@ -81,21 +81,23 @@ class MeekArenaPluginListener implements Listener {
             this.plugin.fullHeal(player);
         }
     }
-    
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onBorderBreak(BlockBreakEvent event) {
-        Block evblock = event.getBlock();
-        double blockX = evblock.getLocation().getX();
-        double blockY = evblock.getLocation().getY();
-        double blockZ = evblock.getLocation().getZ();
-        Location arenaspawn = Bukkit.getWorld("arena").getSpawnLocation();
-        double arenaX = arenaspawn.getX();
-        double arenaY = arenaspawn.getY();
-        double arenaZ = arenaspawn.getZ();
-        
-        int radius = this.plugin.getConfig().getInt("borderradius");
-        if (blockX >= (arenaX+radius) || blockX <= (arenaX-radius) || blockZ >= (arenaZ+radius) || blockZ <= (arenaZ-radius) || blockY >= 255) {
-            event.setCancelled(true);
+        if ("arena".equals(event.getBlock().getLocation().getWorld().getName())) {
+            Block evblock = event.getBlock();
+            double blockX = evblock.getLocation().getX();
+            double blockY = evblock.getLocation().getY();
+            double blockZ = evblock.getLocation().getZ();
+            Location arenaspawn = Bukkit.getWorld("arena").getSpawnLocation();
+            double arenaX = arenaspawn.getX();
+            double arenaY = arenaspawn.getY();
+            double arenaZ = arenaspawn.getZ();
+
+            int radius = this.plugin.getConfig().getInt("borderradius");
+            if (blockX >= (arenaX + radius) || blockX <= (arenaX - radius) || blockZ >= (arenaZ + radius) || blockZ <= (arenaZ - radius) || blockY >= 255) {
+                event.setCancelled(true);
+            }
         }
     }
 }
