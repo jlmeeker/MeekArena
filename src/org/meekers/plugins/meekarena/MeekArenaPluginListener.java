@@ -22,7 +22,6 @@ class MeekArenaPluginListener implements Listener {
 
     public MeekArenaPluginListener(MeekArena plugin) {
         this.plugin = plugin;
-        this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     @EventHandler
